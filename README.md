@@ -1,2 +1,2 @@
 # kolkokrzyzyk
-Gra kółko i Krzyżyk online
+Gra Kółko i Krzyżyk online
