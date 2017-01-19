@@ -11,10 +11,23 @@
     "type": "git",
     "url": "git+https://github.com/Sooyca/kolkokrzyzyk.git"
   },
-  "author": "",
+  "author": "KKS",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Sooyca/kolkokrzyzyk/issues"
   },
-  "homepage": "https://github.com/Sooyca/kolkokrzyzyk#readme"
+  "homepage": "https://github.com/Sooyca/kolkokrzyzyk#readme",
+  "dependencies": {
+    "body-parser": "^1.16.0",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.14.0",
+    "express-session": "^1.14.2",
+    "fs": "0.0.1-security",
+    "http": "0.0.0",
+    "socket.io": "^1.7.2"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "weppo"
+  ]
 }
