@@ -1,0 +1,247 @@
+<html>
+<head>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/scripts.js"></script>
+</head>
+<body>
+	<table width="100%" border="0" style="table-layout:fixed;"> <tr>  
+		<td valign="top" style="text-align:left;"> <a href="/roomsList"> Powrót </a> </td> 
+		<td style="text-align:center;"> <h3> Pokój <%= name %> </h3> </td>
+		<td valign="top" style="text-align:right;"> <a href="#" onclick="changeUsername()"> <%= username %> </a> </td>  
+	</tr> </table>
+	
+	<div align="center">
+	<span id="id"> </span> 
+	<span id="turn"> </span>
+	<button id="button" onclick="newGame()" style="display:none;">Nowa gra</button>
+	</br>
+	<canvas id="canvas" width="400" height="400" style="border:1px solid #000000;"></canvas>
+	</div>
+	
+	<script>
+	var canvas = document.getElementById("canvas")
+	var emptyBoard = [[-1, -1, -1],
+				 	  [-1, -1, -1],
+				 	  [-1, -1, -1]]
+	var board = [[-1, -1, -1],
+				 [-1, -1, -1],
+				 [-1, -1, -1]]
+	var myTurn = false
+	var game = false
+	const height = canvas.height, width = canvas.width
+	var ctx = canvas.getContext("2d")
+	var firstMove
+	var id = 0
+	
+	var socket = io()
+	socket.emit('join', <%= roomNo %>)
+	
+	function newGame()
+	{
+		socket.emit('newgame')
+	}
+	
+	function changeTurn(t)
+	{
+		myTurn = t
+		if (myTurn)
+			document.getElementById("turn").innerHTML = 'Twój ruch.'
+		else
+			document.getElementById("turn").innerHTML = 'Nie twój ruch.'
+	}
+	
+	function check()
+	{
+		for (var i = 0; i < 3; i++)
+		{
+			if (board[i][0] == 0 && board[i][1] == 0 && board[i][2] == 0) return 0
+			if (board[i][0] == 1 && board[i][1] == 1 && board[i][2] == 1) return 1
+			if (board[0][i] == 0 && board[1][i] == 0 && board[2][i] == 0) return 0
+			if (board[0][i] == 1 && board[1][i] == 1 && board[2][i] == 1) return 1
+		}
+		if (board[0][0] == 0 && board[1][1] == 0 && board[2][2] == 0) return 0
+		if (board[0][0] == 1 && board[1][1] == 1 && board[2][2] == 1) return 1
+		if (board[0][2] == 0 && board[1][1] == 0 && board[2][0] == 0) return 0
+		if (board[0][2] == 1 && board[1][1] == 1 && board[2][0] == 1) return 1
+		var draw = true
+		for (var i = 0; i < 3; i++)
+			for (var j = 0; j < 3; j++)
+				if (board[i][j] == -1)
+					draw = false
+		if (draw) return 2
+		return -1
+	}
+	
+	socket.on('newgame', function()
+	{
+		board = [[-1, -1, -1],
+				 [-1, -1, -1],
+				 [-1, -1, -1]]
+		firstMove = 1 - firstMove
+		document.getElementById("button").style = 'display:none;'
+		game = true
+		if (firstMove == id)
+			changeTurn(true)
+		else
+			changeTurn(false)
+		drawBoard()
+	})
+	
+	socket.on('withdrawal', function()
+	{
+		myTurn = false
+		if (game)
+			document.getElementById("turn").innerHTML = 'Przeciwnik wycofał się.'
+		game = false
+		document.getElementById("button").style = 'display:none;'
+	})
+	
+	socket.on('id', function(data)
+	{
+		id = data
+		console.log(id)
+		if (id == 0)
+			document.getElementById("id").innerHTML = 'Jesteś O. '
+		else
+			document.getElementById("id").innerHTML = 'Jesteś X. '
+	})
+	
+	socket.on('start', function(data)
+	{
+		firstMove = parseInt(data.id)
+		board = [[-1, -1, -1],
+				 [-1, -1, -1],
+				 [-1, -1, -1]]
+		document.getElementById("button").style = 'display:none;'
+		game = true
+		if (data.id == id)
+			changeTurn(true)
+		else
+			changeTurn(false)
+		drawBoard()
+	})
+	
+	socket.on('move', function(data)
+	{
+		//board[data.x][data.y] = data.id
+		board = data.board
+		if (data.id != id) 
+			changeTurn(true)
+		drawBoard()
+		var c = check()
+		console.log(c)
+		if (c == id)
+		{
+			myTurn = false
+			game = false
+			document.getElementById("turn").innerHTML = 'Wygrałeś.'
+			document.getElementById("button").style = 'display:initial;'
+		}
+		else if (c == 1-id)
+		{
+			myTurn = false
+			game = false
+			document.getElementById("turn").innerHTML = 'Przegrałeś.'
+			document.getElementById("button").style = 'display:initial;'
+		}
+		else if (c == 2)
+		{
+			myTurn = false
+			game = false
+			document.getElementById("turn").innerHTML = 'Remis.'
+			document.getElementById("button").style = 'display:initial;'
+		}
+	})
+	
+	function mousePos(evt) 
+	{
+		var rect = canvas.getBoundingClientRect()
+		return {
+		  x: evt.clientX - rect.left,
+		  y: evt.clientY - rect.top
+		}
+	}	
+	
+	window.addEventListener('mousedown', function(e)
+	{
+		if (!myTurn) return
+		pos = mousePos(e)
+		console.log(pos)
+		if (!(0 <= pos.x && pos.x <= width && 0 <= pos.y && pos.y <= height)) return
+		var x = Math.floor(pos.x/(width/3))
+		var y = Math.floor(pos.y/(height/3))
+		if (board[x][y] != -1) return
+		board[x][y] = id
+		console.log(board)
+		changeTurn(false)
+		socket.emit('move', {'id': id, 'x': x, 'y': y})
+	})
+	
+	drawGrid()
+	
+	function drawGrid()
+	{
+		ctx.beginPath()
+		ctx.strokeStyle = 'black'
+		ctx.lineWidth = 1
+		ctx.moveTo(0, width/3)
+		ctx.lineTo(height, width/3)
+		ctx.moveTo(0, 2*width/3)
+		ctx.lineTo(height, 2*width/3)
+		ctx.moveTo(height/3, 0)
+		ctx.lineTo(height/3, width)
+		ctx.moveTo(2*height/3, 0)
+		ctx.lineTo(2*height/3, width)
+		ctx.stroke()
+	}
+	
+	function drawX(x, y)
+	{
+		var h = height/3
+		var w = width/3
+		ctx.beginPath()
+		ctx.lineWidth = height/50
+		ctx.lineCap = 'round'
+		ctx.strokeStyle = 'red'
+		ctx.moveTo(x - 0.4*w, y - 0.4*h)
+		ctx.lineTo(x + 0.4*w, y + 0.4*h)
+		ctx.moveTo(x - 0.4*w, y + 0.4*h)
+		ctx.lineTo(x + 0.4*w, y - 0.4*h)
+		ctx.stroke()
+	}
+	
+	function drawO(x, y)
+	{
+		ctx.beginPath()
+		ctx.lineWidth = height/50
+		ctx.strokeStyle = 'green'
+		ctx.arc(x, y, 0.4 * (width/3), 0, 2*Math.PI)
+		ctx.stroke()
+	}
+	
+	function drawBoard()
+	{
+		clearBoard()
+		for (var i = 0; i < 3; i++)
+			for (var j = 0; j < 3; j++)
+			{
+				var x = i * width/3 + width/6
+				var y = j * height/3 + height/6
+				if (board[i][j] == 0)
+					drawO(x, y)
+				if (board[i][j] == 1)
+					drawX(x, y)
+			}
+	}
+	
+	function clearBoard()
+	{
+		ctx.clearRect(0, 0, width, height)
+		drawGrid()
+	}
+	
+	</script>
+	
+</body>
+</html>
+
