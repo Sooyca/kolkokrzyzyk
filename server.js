@@ -25,8 +25,8 @@ app.use( cookieParser() )
 app.use(express.static('./'))
 app.use(session(
 {
-	secret: 'dfgfsgfsgsf', 
-	resave: false, 
+	secret: 'dfgfsgfsgsf',
+	resave: false,
 	saveUninitialized: true
 }))
 
@@ -65,7 +65,7 @@ app.get('/createRoom', (req, res) =>
 	res.redirect('/rooms/' + (rooms.length - 1))
 })
 
-app.get('/rooms/:id', (req, res) => 
+app.get('/rooms/:id', (req, res) =>
 {
 	var id = req.params.id
 	if (rooms[id].players.length >= 2)
@@ -74,7 +74,7 @@ app.get('/rooms/:id', (req, res) =>
 		res.render('board', {'name': rooms[id].name, 'roomNo': id, 'username': req.cookies.username})
 })
 
-io.on('connection', function(socket) 
+io.on('connection', function(socket)
 {
     console.log('Client connected: ' + socket.id)
     /*
@@ -148,6 +148,5 @@ io.on('connection', function(socket)
 })
 
 
-server.listen(3000)
+server.listen( process.env.PORT || 3000)
 console.log('ok')
-
